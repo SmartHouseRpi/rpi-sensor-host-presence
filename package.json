@@ -1,0 +1,14 @@
+{
+  "name": "Sensor-Host-Presence",
+  "version": "1.0.0",
+  "description": "Host online presence sensor on Docker",
+  "author": "Dmitry A. Grechka <dmitry@grechka.family",
+  "main": "sensor.js",
+  "scripts": {
+    "start": "node sensor.js"
+  },
+  "dependencies": {
+    "ping": "~0.1.10",
+    "node-redis":"~0.1.7"
+  }
+}
