@@ -1,5 +1,10 @@
 FROM hypriot/rpi-node:latest
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	iputils-ping \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& apt-get clean
+
 # Create app directory
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
