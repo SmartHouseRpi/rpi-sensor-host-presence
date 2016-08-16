@@ -1,6 +1,7 @@
 'use strict';
 
 const Redis = require('node-redis')
+const ping = require('ping');
 
 var host = undefined;
 var db_key = undefined;
@@ -18,17 +19,39 @@ if(typeof process.env.db_key !== 'undefined') {
   throw "'db_key' environmental variable is not set. Set it and restart container";
 }
 
-if(typeof process.env.db_key !== 'undefined') {
+if(typeof process.env.offline_threshold_sec !== 'undefined') {
   offline_threshold_sec = process.env.offline_threshold_sec;
 }
 
-var ping = require('ping');
 
 console.log(`Monitoring online presence of host ${host}, storing state in Redis key ${db_key}.`);
-console.log(`Host is considered offline after not responding to pings for ${offline_threshold_sec} seconds. You can tune this threshold value with 'offline_threshold_sec' environmental variable`)
+console.log("Host is considered offline after not responding to pings for "+offline_threshold_sec+" seconds. You can tune this threshold value with 'offline_threshold_sec' environmental variable");
 
 var state="unknown";
 var lastOnline = new Date(2000, 1, 1); //initial time moment is long in the past
+
+function Update(new_state) {
+  console.log("Updating database (key "+db_key+")...");
+  var link = Redis.createClient(6379, "redis");
+  link.set(db_key,new_state,function(error) {
+    if(!error) {
+      console.log("Database updated");
+      var publishing_key = `${db_key}.subscription`;
+      console.log("Sending notifications ("+publishing_key+")");
+      link.publish(publishing_key, new_state, function(error) {
+      if(!error) {
+         console.log("sent");
+         state=new_state;  
+      }
+      else
+         console.warn("error sending notifications: "+error);
+      });
+    }
+    else
+      console.warn("error updating database: "+error);
+    });
+  link.quit();
+}
 
 function Tick() {
 	ping.sys.probe(host, function(isAlive){
@@ -40,7 +63,7 @@ function Tick() {
 		if(isAlive) {
 			console.log("Host came online");
 		} else {
-			if((now - lastOnline)/1000>-offline_threshold_sec) {
+			if((now - lastOnline)/1000 >= offline_threshold_sec) {
 				cosnole.log("Host came offline");
 			}
 			else {
@@ -48,7 +71,7 @@ function Tick() {
 				return;
 			}
 		}		
-		state=curState;
+		Update(curState);
 	}
     });
 }
