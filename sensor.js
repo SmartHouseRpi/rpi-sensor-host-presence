@@ -55,7 +55,7 @@ function Update(new_state) {
 
 function Tick() {
 	ping.sys.probe(host, function(isAlive){
-	var now = Date();
+	var now = new Date();
 	var curState = isAlive?"online":"offline";
 	if(isAlive)
 		lastOnline = now;
@@ -63,8 +63,8 @@ function Tick() {
 		if(isAlive) {
 			console.log("Host came online");
 		} else {
-			if((now - lastOnline)/1000 >= offline_threshold_sec) {
-				cosnole.log("Host came offline");
+			if(now - lastOnline > offline_threshold_sec*1000.0) {
+				console.log("Host went offline");
 			}
 			else {
 				console.log("Host does not respond.");
