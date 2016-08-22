@@ -1,11 +1,11 @@
 'use strict';
 
-const Redis = require('node-redis')
+const Redis = require('redis')
 const ping = require('ping');
 
 var host = undefined;
 var db_key = undefined;
-var offline_threshold_sec = 35;
+var offline_threshold_sec = 15;
 
 if(typeof process.env.host !== 'undefined') {
   host = process.env.host;
@@ -30,9 +30,10 @@ console.log("Host is considered offline after not responding to pings for "+offl
 var state="unknown";
 var lastOnline = new Date(2000, 1, 1); //initial time moment is long in the past
 
+var link = Redis.createClient(6379, "redis");
+
 function Update(new_state) {
   console.log("Updating database (key "+db_key+")...");
-  var link = Redis.createClient(6379, "redis");
   link.set(db_key,new_state,function(error) {
     if(!error) {
       console.log("Database updated");
@@ -50,7 +51,6 @@ function Update(new_state) {
     else
       console.warn("error updating database: "+error);
     });
-  link.quit();
 }
 
 function Tick() {
